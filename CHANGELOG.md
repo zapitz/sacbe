@@ -6,6 +6,16 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+## [0.2.0] - 2026-11-25
+
+### Agregado
+
+- Librería de Python `sacbe` en `cliente/`: `from sacbe import Anthropic` (y `AsyncAnthropic`) es el SDK oficial con la regla de respaldo directo por debajo, sin tocar el resto del código. Lee `SACBE_URL`, `SACBE_LLAVE` y `ANTHROPIC_API_KEY`. Probada con el SDK 0.42 a 2.14 y Python 3.9 a 3.14.
+
+### Cambiado
+
+- El paquete del servidor se llama ahora `sacbe-servidor` en `pyproject.toml`, para dejarle el nombre `sacbe` a la librería. No cambia nada al instalar con Docker.
+
 ## [0.1.0] - 2026-11-25
 
 Primera versión pública. Copyright 2026 Ariel Urtaza, bajo Apache-2.0.
@@ -30,5 +40,6 @@ Primera versión pública. Copyright 2026 Ariel Urtaza, bajo Apache-2.0.
 - Zona horaria del panel configurable con `PIA_ZONA_HORARIA`.
 - Ejemplos de Traefik, Caddy, cron de conciliación y cliente de Python con respaldo en `docs/ejemplos/`.
 
-[Sin publicar]: https://github.com/zapitz/sacbe/compare/v0.1.0...HEAD
+[Sin publicar]: https://github.com/zapitz/sacbe/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/zapitz/sacbe/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/zapitz/sacbe/releases/tag/v0.1.0

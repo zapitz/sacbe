@@ -2,7 +2,7 @@
 
 Sacbé es un gestor de llaves y de crédito de la API de Anthropic para **tus** organizaciones de la consola de Anthropic y **tus** programas. Se pone entre tus programas y `api.anthropic.com`: cada programa usa una llave propia `pia_...`, y el gestor decide con qué organización sale cada petición y lleva la cuenta de lo que gasta cada uno.
 
-El paquete de Python se llama `pasarela`, y los contenedores, `pasarela-ia-*`.
+El código del servidor vive en el paquete de Python `pasarela` y corre en los contenedores `pasarela-ia-*`. La librería para conectar tus programas en Python está en [cliente/](cliente/) y se llama `sacbe`.
 
 ## Qué resuelve
 
@@ -65,6 +65,7 @@ La última orden imprime la llave `pia_` del programa una sola vez. Los pasos co
 
 - [docs/instalacion.md](docs/instalacion.md): requisitos, `.env`, cuentas, primer usuario, Cloudflare Access, proxy y vigía.
 - [docs/conectar-programas.md](docs/conectar-programas.md): el contrato de integración, la regla de respaldo directo y ejemplos.
+- [cliente/](cliente/): la librería `sacbe` para Python. Cambias `from anthropic import Anthropic` por `from sacbe import Anthropic` y listo.
 - [docs/panel.md](docs/panel.md): papeles y qué puede hacer cada uno.
 - [docs/seguridad.md](docs/seguridad.md): modelo de amenazas.
 - [docs/ejemplos/](docs/ejemplos/): Traefik, Caddy, cron de conciliación y el cliente de Python con respaldo.

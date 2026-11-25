@@ -76,6 +76,22 @@ Cada programa guarda dos cosas: su llave `pia_` y su propia llave de Anthropic, 
 
 Las fallas que cuentan como "no se pudo conectar" son `ConnectError`, `ConnectTimeout`, `ReadError`, `WriteError`, `WriteTimeout` y `RemoteProtocolError` de httpx. `ReadTimeout` y `PoolTimeout` cuentan como timeout de lectura.
 
+## La forma más fácil en Python: la librería `sacbe`
+
+Si tu programa usa el SDK oficial de Anthropic, instala la librería y cambia una línea:
+
+```bash
+pip install "sacbe @ git+https://github.com/zapitz/sacbe@v0.2.0#subdirectory=cliente"
+```
+
+```python
+from sacbe import Anthropic   # en lugar de: from anthropic import Anthropic
+```
+
+Con `SACBE_URL`, `SACBE_LLAVE` y `ANTHROPIC_API_KEY` en el entorno, aplica la regla de arriba por debajo del SDK. Una diferencia: los reintentos propios del SDK (`max_retries`, 2 por defecto) siguen activos, así que un timeout de lectura sí se repite por el gestor como se repetiría sin Sacbé. Para cumplir la regla 3 al pie de la letra, crea el cliente con `max_retries=0`. Detalles en [cliente/README.md](../cliente/README.md).
+
+Las otras dos opciones siguen sirviendo: el ejemplo de abajo, si prefieres ver y controlar la regla en tu código, y el parche `sitecustomize.py`, si no puedes tocar el código del programa.
+
 ## Ejemplo en Python
 
 Dos clientes del SDK `anthropic` y una función de respaldo. Es el archivo [ejemplos/cliente_con_respaldo.py](ejemplos/cliente_con_respaldo.py), probado sin red en `tests/test_ejemplo_integracion.py`:

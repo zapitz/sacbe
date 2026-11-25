@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sacbe"
+version = "0.2.0"
+description = "Cliente de Anthropic que pasa por el gestor Sacbé y regresa solo a la conexión directa si el gestor falla."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{name = "Ariel Urtaza"}]
+requires-python = ">=3.9"
+keywords = ["anthropic", "claude", "sacbe", "gateway", "fallback", "respaldo"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Natural Language :: Spanish",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Software Development :: Libraries",
+]
+dependencies = ["anthropic>=0.40"]
+
+[project.urls]
+Homepage = "https://github.com/zapitz/sacbe"
+Documentation = "https://github.com/zapitz/sacbe/tree/main/cliente"
+Repository = "https://github.com/zapitz/sacbe"
+Issues = "https://github.com/zapitz/sacbe/issues"
+
+[tool.setuptools]
+packages = ["sacbe"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q -p no:cacheprovider"
