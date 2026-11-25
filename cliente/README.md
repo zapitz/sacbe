@@ -10,7 +10,7 @@ Desde GitHub:
 pip install "sacbe @ git+https://github.com/zapitz/sacbe@v0.2.0#subdirectory=cliente"
 ```
 
-Necesita Python 3.9 o más nuevo y el SDK `anthropic` 0.40 o más nuevo (probado con 0.42, 0.109, 0.125, 1.11, 2.12 y 2.14).
+Necesita Python 3.9 o más nuevo y el SDK `anthropic` 0.40 o más nuevo (probado con 0.42, 0.109, 0.125, 1.11, 2.12 y 2.14). GitHub ya no ofrece Python 3.9 para sus pruebas automáticas, así que 3.9 se probó a mano.
 
 ## Usar
 
