@@ -1,0 +1,86 @@
+# Sacbé: gestor de llaves y créditos de la API de Anthropic.
+#   pasarela-ia-api     el proxy hacia Anthropic (/anthropic/v1/*, /v1/catalogo, /v1/uso, /salud). Sin puertos
+#                       publicados: los programas lo alcanzan por la red de Docker o por tu proxy inverso.
+#   pasarela-ia-panel   el panel interno de solo lectura. Publica su puerto SOLO en PIA_IP_PANEL (127.0.0.1 o
+#                       una IP privada), nunca en 0.0.0.0.
+#   pasarela-ia-sacbe   el panel con login (Cloudflare Access). Sin puertos publicados: ponlo detrás de un proxy
+#                       inverso (docs/ejemplos/). Lee además sacbe.env.
+#   pasarela-ia-db      Postgres.
+#
+# Para que un programa en otro compose hable con el gestor, el gestor entra a la red de la app, nunca al revés:
+# agrega la red de la app a `networks` de pasarela-ia-api y declárala abajo como externa, por ejemplo
+#
+#     services:
+#       pasarela-ia-api:
+#         networks: [pasarela-ia-red, mi-app_default]
+#     networks:
+#       mi-app_default: {external: true}
+#
+# Así la app no ve la base ni los paneles, y el gestor no queda expuesto a lo que haya en la red de la app.
+# Lo mismo para tu proxy inverso: conecta pasarela-ia-api y pasarela-ia-sacbe a la red del proxy.
+name: pasarela-ia
+services:
+  pasarela-ia-api:
+    build: .
+    image: pasarela-ia:local
+    container_name: pasarela-ia-api
+    env_file: .env
+    restart: unless-stopped
+    depends_on:
+      pasarela-ia-db: {condition: service_healthy}
+    networks: [pasarela-ia-red]
+    mem_limit: 1g                        # una subida de 100 MB ocupa unas 2 veces su tamaño en memoria
+    stop_grace_period: 35s               # uvicorn espera hasta 30 s a que terminen streams y escrituras
+  pasarela-ia-panel:
+    build: .
+    image: pasarela-ia:local
+    container_name: pasarela-ia-panel
+    env_file: .env
+    environment:
+      PIA_PANEL: "1"                     # solo este contenedor y pasarela-ia-sacbe sirven /panel
+    restart: unless-stopped
+    depends_on:
+      pasarela-ia-db: {condition: service_healthy}
+    networks: [pasarela-ia-red]
+    ports:
+      - "${PIA_IP_PANEL:-127.0.0.1}:${PIA_PUERTO_PANEL:-8090}:8080"
+    mem_limit: 1g
+    stop_grace_period: 35s
+  pasarela-ia-sacbe:
+    image: pasarela-ia:local             # la misma imagen; el build lo hacen pasarela-ia-api y pasarela-ia-panel
+    container_name: pasarela-ia-sacbe
+    env_file:
+      - .env                             # el común, SIN PIA_ACCESS_AUD (con ella api y panel no arrancan)
+      - sacbe.env                        # modo 600, solo aquí: PIA_ACCESS_AUD, PIA_ACCESS_EQUIPO, PIA_PANEL_SECRETO
+    environment:
+      PIA_PANEL: "1"
+      PIA_SACBE: "1"                     # solo el panel con acciones y /salud; exige el JWT de Cloudflare Access
+    restart: unless-stopped
+    depends_on:
+      pasarela-ia-db: {condition: service_healthy}
+      pasarela-ia-api: {condition: service_started}
+    networks: [pasarela-ia-red]
+    mem_limit: 512m
+    stop_grace_period: 35s
+  pasarela-ia-db:
+    image: postgres:16-alpine@sha256:aa6cb33cf4c19c765cefcf48d96176258800870a9a1e930ad126200f9d825139
+    container_name: pasarela-ia-db
+    environment:
+      POSTGRES_DB: pasarela
+      POSTGRES_USER: pasarela
+      POSTGRES_PASSWORD: ${PIA_DB_CLAVE:?falta PIA_DB_CLAVE}
+    volumes:
+      - pasarela-ia-db-datos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pasarela -d pasarela"]
+      interval: 10s
+      retries: 10
+    restart: unless-stopped
+    networks: [pasarela-ia-red]
+    mem_limit: 256m
+networks:
+  pasarela-ia-red:
+    name: pasarela-ia-red
+volumes:
+  pasarela-ia-db-datos:
+    name: pasarela-ia-db-datos

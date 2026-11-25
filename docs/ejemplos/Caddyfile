@@ -1,0 +1,48 @@
+# Ejemplo de Caddyfile para Sacbé. Cambia ia.example.com y panel.example.com por tus dominios.
+# Caddy debe compartir una red de Docker con pasarela-ia-api y pasarela-ia-sacbe.
+# Caddy saca los certificados solo (reto HTTP o TLS-ALPN), así que los puertos 80 y 443 deben llegarle.
+
+{
+	admin off
+}
+
+# API pública. Solo pasan /anthropic/v1/*, /v1/catalogo, /v1/uso y /salud; lo demás es 404.
+# header_up X-Pia-Puerta publica es obligatoria: pisa la que mande el cliente y hace que la app aplique las reglas
+# públicas (castigo por llaves inválidas, sin cabeceras internas). Sin ella la app cree que la petición es interna.
+ia.example.com {
+	header -Server
+	@abiertas {
+		path /anthropic/v1/* /v1/catalogo /v1/uso /salud
+	}
+	handle @abiertas {
+		reverse_proxy pasarela-ia-api:8080 {
+			header_up X-Pia-Puerta publica
+			# Las respuestas en stream (SSE) salen en cuanto llegan.
+			flush_interval -1
+		}
+	}
+	handle {
+		respond 404
+	}
+}
+
+# Panel con login. Pon delante una aplicación de Cloudflare Access para este dominio: la app exige el JWT de
+# Access y sin él responde 403. PIA_SACBE_HOST debe ser este mismo nombre.
+panel.example.com {
+	header -Server
+	reverse_proxy pasarela-ia-sacbe:8080
+}
+
+# El panel interno de solo lectura (pasarela-ia-panel) no va en este archivo: escucha solo en la IP de
+# PIA_IP_PANEL (127.0.0.1 o una IP privada). Si quieres TLS ahí, usa un bloque aparte que solo pase /panel y /panel/costo:
+#
+#	panel-interno.example.com {
+#		bind 192.0.2.10
+#		@panel path /panel /panel/costo
+#		handle @panel {
+#			reverse_proxy pasarela-ia-panel:8080
+#		}
+#		handle {
+#			respond 404
+#		}
+#	}

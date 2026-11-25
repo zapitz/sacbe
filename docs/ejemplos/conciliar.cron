@@ -1,0 +1,11 @@
+# Conciliación diaria desde tu máquina, la que guarda las llaves de administrador (no el servidor).
+# Lee el reporte de costos de cada organización y manda al gestor solo totales por día.
+# Instálalo con `crontab -e`. Cambia las rutas y el servidor por los tuyos.
+#
+# Variables:
+#   PIA_SERVIDOR   usuario@servidor donde corre el gestor (obligatoria para ops/pia)
+#   PIA_SECRETOS   carpeta con anthropic_admin_<cuenta>.env (por omisión ~/.config/sacbe)
+#   PIA_POR        quién queda como autor en la bitácora
+#
+# Todos los días a las 08:00, hora de tu máquina:
+0 8 * * * PIA_SERVIDOR=admin@servidor.example.com PIA_POR="cron conciliar" $HOME/sacbe/ops/pia conciliar --cita "conciliación diaria automática" >> $HOME/.local/state/sacbe-conciliar.log 2>&1

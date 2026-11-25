@@ -1,0 +1,59 @@
+# Ejemplo de configuración dinámica de Traefik (proveedor de archivos) para Sacbé.
+# Cambia ia.example.com y panel.example.com por tus dominios, y usa los nombres de entryPoints y certResolver
+# que ya tenga tu Traefik. Traefik debe compartir una red de Docker con pasarela-ia-api y pasarela-ia-sacbe.
+#
+# API pública (ia.example.com):
+#   - Solo deja pasar /anthropic/v1/*, /v1/catalogo, /v1/uso y /salud. La app repite la misma lista
+#     (pasarela/puerta.py), así que un error aquí no abre nada más.
+#   - X-Pia-Puerta: publica es obligatoria. Pisa la que mande el cliente y con ella la app aplica las reglas
+#     públicas: castigo por llaves inválidas y sin cabeceras internas (x-pia-fuente, anthropic-organization-id).
+#     Sin esta cabecera la app trata la petición como de la red interna.
+#
+# Panel con login (panel.example.com):
+#   - Va detrás de una aplicación de Cloudflare Access. La app exige y verifica el JWT de Access
+#     (Cf-Access-Jwt-Assertion); sin él responde 403. Sirve /panel, /panel/accion, /panel/llave/<token> y /salud.
+#   - El panel interno de solo lectura (pasarela-ia-panel) NO va aquí: se publica solo en una IP privada o en
+#     127.0.0.1 (PIA_IP_PANEL en compose.yaml).
+http:
+  middlewares:
+    pasarela-ia-puerta:
+      headers:
+        customRequestHeaders:
+          X-Pia-Puerta: "publica"
+    pasarela-ia-a-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+  routers:
+    pasarela-ia:
+      rule: "Host(`ia.example.com`) && (PathPrefix(`/anthropic/v1/`) || Path(`/v1/catalogo`) || Path(`/v1/uso`) || Path(`/salud`))"
+      entryPoints: [https]
+      middlewares: [pasarela-ia-puerta]
+      service: pasarela-ia
+      tls:
+        certResolver: letsencrypt
+    pasarela-ia-http:
+      rule: "Host(`ia.example.com`)"
+      entryPoints: [http]
+      middlewares: [pasarela-ia-a-https]
+      service: pasarela-ia
+    pasarela-ia-sacbe:
+      rule: "Host(`panel.example.com`)"
+      entryPoints: [https]
+      service: pasarela-ia-sacbe
+      tls:
+        certResolver: letsencrypt
+    pasarela-ia-sacbe-http:
+      rule: "Host(`panel.example.com`)"
+      entryPoints: [http]
+      middlewares: [pasarela-ia-a-https]
+      service: pasarela-ia-sacbe
+  services:
+    pasarela-ia:
+      loadBalancer:
+        servers:
+          - url: "http://pasarela-ia-api:8080"
+    pasarela-ia-sacbe:
+      loadBalancer:
+        servers:
+          - url: "http://pasarela-ia-sacbe:8080"

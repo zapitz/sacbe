@@ -1,0 +1,52 @@
+[project]
+name = "sacbe"
+version = "0.1.0"
+description = "Gestor de llaves y crédito de la API de Anthropic para tus organizaciones y tus programas."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{name = "Ariel Urtaza"}]
+requires-python = ">=3.13"
+keywords = ["anthropic", "claude", "api", "proxy", "llaves", "creditos", "gateway", "fastapi"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Web Environment",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Natural Language :: Spanish",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: Proxy Servers",
+    "Topic :: System :: Systems Administration",
+]
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.32",
+    "httpx>=0.28",
+    "sqlalchemy>=2.0.36",
+    "psycopg[binary]>=3.2",
+    "greenlet>=3.1",
+    "PyJWT>=2.10",
+    "cryptography>=44",
+]
+
+[project.urls]
+Homepage = "https://github.com/zapitz/sacbe"
+Repository = "https://github.com/zapitz/sacbe"
+Issues = "https://github.com/zapitz/sacbe/issues"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["pasarela"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+filterwarnings = ['ignore:Using `httpx` with:starlette.exceptions.StarletteDeprecationWarning']

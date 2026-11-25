@@ -1,0 +1,79 @@
+#!/usr/bin/env bash
+# pia: administración de Sacbé desde tu máquina. Corre la orden por ssh dentro del contenedor del servidor.
+# Las llaves nuevas (alta, rotar) se guardan en $PIA_SECRETOS/proyectos/<nombre>.env y no se imprimen.
+# Variables: PIA_SERVIDOR (obligatoria, usuario@servidor), PIA_CONTENEDOR (pasarela-ia-api),
+#   PIA_SECRETOS (~/.config/sacbe), PIA_POR (autor de la conciliación en la bitácora).
+# Ejemplos:
+#   ops/pia alta lotes --clase extra --por "admin" --cita "programa nuevo de lotes"
+#   ops/pia uso · ops/pia saldos · ops/pia cuentas · ops/pia cambios -n 10
+#   ops/pia credito agregar --cuenta org1 --monto 200 --otorgada 2026-11-15 --vence 2026-12-15 --por "…" --cita "…"
+#   ops/pia credito ajustar 2 --vence 2026-12-17 --por "…" --cita "…"   (corrige monto o fechas; no confirma)
+#   ops/pia tope lotes --usd 20 --modo corte --por "…" --cita "…" · ops/pia presupuesto --usd 50 --por "…" --cita "…"
+#   ops/pia conciliar --cita "…"   (reporte de costos con las llaves de administrador locales; solo viajan totales)
+#   ops/pia objeto registrar file_… --tipo archivo --cuenta org2 --proyecto crm --por "…" --cita "…"
+#   ops/pia usuario alta dueno@example.com --papel dueno --por "…" --cita "…" · usuario baja|papel|asignar|quitar|lista
+set -euo pipefail
+CONTENEDOR="${PIA_CONTENEDOR:-pasarela-ia-api}"
+SECRETOS="${PIA_SECRETOS:-$HOME/.config/sacbe}"
+
+remoto() {
+  if [[ -z "${PIA_SERVIDOR:-}" ]]; then
+    echo "Falta PIA_SERVIDOR (usuario@servidor donde corre el gestor)." >&2
+    exit 1
+  fi
+  ssh -o ConnectTimeout=10 "$PIA_SERVIDOR" "docker exec -i $CONTENEDOR python -m pasarela.admin $(printf '%q ' "$@")"
+}
+
+uso_alta() {
+  echo "Uso: ops/pia alta <nombre> --clase produccion|extra --por \"quién\" --cita \"por qué\"" >&2
+  echo "     ops/pia rotar <nombre> --por \"quién\" --cita \"por qué\"" >&2
+}
+
+case "${1:-}" in
+  alta|rotar)
+    nombre="${2:-}"
+    if [[ -z "$nombre" || "$nombre" == -* ]]; then
+      uso_alta
+      exit 1
+    fi
+    salida="$(remoto "$@")" || { echo "El servidor no respondió bien." >&2; exit 1; }
+    # Solo se toma la línea que es exactamente una llave; el resto de la salida nunca se muestra.
+    llave="$(printf '%s\n' "$salida" | grep -E '^pia_[A-Za-z0-9_-]+$' | tail -1 || true)"
+    if [[ -z "$llave" ]]; then
+      lineas="$(printf '%s' "$salida" | grep -c '' || true)"
+      echo "Salida inesperada del servidor (${lineas:-0} líneas). Si la llave se creó, corre: ops/pia rotar $nombre --por \"...\" --cita \"...\"" >&2
+      exit 1
+    fi
+    umask 077
+    mkdir -p "$SECRETOS/proyectos"
+    archivo="$SECRETOS/proyectos/$nombre.env"
+    printf 'ANTHROPIC_API_KEY=%s\n' "$llave" > "$archivo"
+    chmod 600 "$archivo"
+    echo "Llave de $nombre guardada en $archivo (termina en ${llave: -4})"
+    ;;
+  conciliar)
+    shift
+    cita="" resto=()
+    while (( $# )); do
+      case "$1" in
+        --cita) cita="${2:-}"; shift 2 || { echo "conciliar: --cita necesita un valor" >&2; exit 1; } ;;
+        --cita=*) cita="${1#--cita=}"; shift ;;
+        *) resto+=("$1"); shift ;;
+      esac
+    done
+    if [[ -z "$cita" ]]; then
+      echo "Uso: ops/pia conciliar --cita \"por qué\" [--dias 8] [--secretos carpeta]" >&2
+      exit 1
+    fi
+    RAIZ="$(cd "$(dirname "$0")/.." && pwd)"
+    json="$(cd "$RAIZ" && PIA_SECRETOS="$SECRETOS" python3 -m pasarela.conciliar ${resto[@]+"${resto[@]}"})" \
+      || { echo "conciliar: no pude leer ninguna cuenta; no se manda nada." >&2; exit 1; }
+    printf '%s\n' "$json" | remoto conciliacion cargar --por "${PIA_POR:-ops/pia conciliar}" --cita "$cita"
+    ;;
+  ""|-h|--help)
+    sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'
+    ;;
+  *)
+    remoto "$@"
+    ;;
+esac

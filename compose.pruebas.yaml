@@ -1,0 +1,15 @@
+name: pia-pruebas
+services:
+  pia-pruebas-db:
+    image: postgres:16-alpine@sha256:aa6cb33cf4c19c765cefcf48d96176258800870a9a1e930ad126200f9d825139
+    environment: {POSTGRES_DB: p, POSTGRES_USER: p, POSTGRES_PASSWORD: p}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U p -d p"]
+      interval: 2s
+      retries: 30
+  pia-pruebas:
+    build: {context: ., dockerfile: Dockerfile.pruebas}
+    environment:
+      PIA_PRUEBAS_DB: postgresql+psycopg://p:p@pia-pruebas-db:5432/p
+    depends_on:
+      pia-pruebas-db: {condition: service_healthy}

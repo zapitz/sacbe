@@ -1,0 +1,22 @@
+fastapi>=0.115
+uvicorn>=0.32
+httpx>=0.28
+sqlalchemy>=2.0.36
+psycopg[binary]>=3.2
+# greenlet va explícito: SQLAlchemy lo pide en Linux x86_64 y pip-compile en macOS (arm64) no lo vería
+greenlet>=3.1
+# Identidad (Cloudflare Access): verificar el JWT RS256 del panel con login.
+PyJWT>=2.10
+cryptography>=44
+
+# Topes por antigüedad: de cada paquete, la versión más nueva con al menos 14 días de publicada.
+# Se suben cuando la siguiente versión cumpla 14 días.
+fastapi==0.162.0
+sqlalchemy==2.1.6
+psycopg[binary]==3.3.6
+pydantic==2.14.1
+pydantic-core==2.50.1
+anyio==4.15.1
+click==8.5.0
+typing-inspection==0.4.4
+opentelemetry-api==1.45.1

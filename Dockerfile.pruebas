@@ -1,0 +1,11 @@
+FROM python:3.13-slim@sha256:09a17cad02668ae61ece136b4fd36ac3849e14f670ebedb637ea3e15580525bc
+WORKDIR /app
+COPY requirements.txt requirements-dev.txt ./
+RUN pip install --no-cache-dir --require-hashes -r requirements-dev.txt
+COPY pasarela ./pasarela
+COPY tests ./tests
+COPY ops ./ops
+COPY docs ./docs
+COPY pyproject.toml Dockerfile ./
+COPY .github ./.github
+CMD ["python", "-m", "pytest"]

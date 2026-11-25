@@ -1,0 +1,7 @@
+# Dependencias para correr las pruebas. Incluye las de producción con sus hashes.
+-r requirements.txt
+pytest==9.1.1
+# El SDK 1.x y 2.x de Anthropic usa httpx2: el parche de ops/cliente-python lo cubre y las pruebas lo ejercitan.
+httpx2==2.16.0
+# Para tests/test_ejemplo_integracion.py (el ejemplo de docs/conectar-programas.md).
+anthropic==2.8.0
