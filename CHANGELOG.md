@@ -6,6 +6,12 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Sin publicar]
 
+## [0.3.0] - 2026-11-26
+
+### Agregado
+
+- Avisos firmados (webhooks) con el formato de Standard Webhooks: `uso.diario`, `saldo.bajo`, `cuenta.cambio` y `llave.rotada`, más `prueba`. Reintentos a 1 min, 5 min, 30 min, 2 h y 6 h; doble firma 24 h al rotar el secreto. Órdenes `ops/pia webhook alta|rotar|cambiar|lista|prueba|generar|entregar`; el vigía genera y entrega en cada vuelta. Ver [docs/avisos-firmados.md](docs/avisos-firmados.md).
+
 ## [0.2.0] - 2026-11-25
 
 ### Agregado
@@ -40,6 +46,7 @@ Primera versión pública. Copyright 2026 Ariel Urtaza, bajo Apache-2.0.
 - Zona horaria del panel configurable con `PIA_ZONA_HORARIA`.
 - Ejemplos de Traefik, Caddy, cron de conciliación y cliente de Python con respaldo en `docs/ejemplos/`.
 
-[Sin publicar]: https://github.com/zapitz/sacbe/compare/v0.2.0...HEAD
+[Sin publicar]: https://github.com/zapitz/sacbe/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/zapitz/sacbe/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/zapitz/sacbe/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/zapitz/sacbe/releases/tag/v0.1.0

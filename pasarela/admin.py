@@ -17,6 +17,7 @@ from sqlalchemy import case, delete, func, insert, select, update
 from sqlalchemy.exc import IntegrityError
 
 from . import avisos as modulo_avisos
+from . import webhooks as modulo_webhooks
 from .bolsa import CLAVE_PRESUPUESTO, MICRO, calcular, cuadre, fecha, leer, pagado_visible, usd
 from .config import cargar
 from .esquema import (ajuste, cambio, concesion, conciliacion, crear_motor, cuenta, fuente_estado, lectura,
@@ -622,6 +623,41 @@ def imprimir_saldos(f) -> None:
         print(f"Ojo: la cuenta {n} está en la tabla pero no en PIA_FUENTES.")
 
 
+def _webhook(motor, a) -> None:
+    wh = modulo_webhooks
+    if a.sub in ("alta", "rotar", "cambiar"):
+        _validar(a.por, a.cita)
+        anotar = lambda c, accion, detalle: _cambio(c, a.por, a.cita, accion, detalle)  # noqa: E731
+    if a.sub == "alta":
+        if not NOMBRE.fullmatch(a.nombre):
+            raise SystemExit("El nombre va en minúsculas, con letras, números y guiones.")
+        wh.alta(motor, a.nombre, a.url, sys.stdin.read(), a.eventos, a.proyectos, anotar)
+        print(f"webhook {a.nombre}: alta hacia {a.url}")
+    elif a.sub == "rotar":
+        wh.rotar(motor, a.nombre, sys.stdin.read(), anotar)
+        print(f"webhook {a.nombre}: secreto nuevo; el anterior firma 24 h más")
+    elif a.sub == "cambiar":
+        wh.cambiar(motor, a.nombre, anotar, url=a.url, eventos=a.eventos, proyectos=a.proyectos,
+                   activo=None if a.activo is None else a.activo in ("si", "sí"))
+        print(f"webhook {a.nombre}: cambiado")
+    elif a.sub == "lista":
+        for s in wh.lista(motor):
+            ent = ", ".join(f"{k} {v}" for k, v in sorted(s["entregas"].items())) or "sin entregas"
+            print(f"{s['nombre']:<12} {'activo' if s['activo'] else 'apagado'} · {s['url']} · secreto …{s['huella']}"
+                  f" · eventos {s['eventos']} · proyectos {s['proyectos'] or '-'} · {ent}")
+    elif a.sub == "prueba":
+        print(f"aviso de prueba en cola: {wh.encolar_prueba(motor, a.nombre)}")
+    elif a.sub == "generar":
+        def concesiones(t):
+            return {e.id: e for e in calcular(leer(motor, t), cargar(), t)[0].concesiones}
+        print(f"webhook: {wh.generar(motor, concesiones=concesiones)} eventos nuevos")
+    elif a.sub == "entregar":
+        def avisar(clave, texto):
+            modulo_avisos.avisar(motor, [modulo_avisos.Aviso(clave, texto)])
+        r = wh.entregar(motor, avisar=avisar)
+        print(f"webhook: {r['entregados']} entregados · {r['reintentos']} por reintentar · {r['fallidos']} fallidos")
+
+
 def main(argv=None) -> None:
     p = argparse.ArgumentParser(prog="pasarela.admin")
     sub = p.add_subparsers(dest="orden", required=True)
@@ -713,6 +749,23 @@ def main(argv=None) -> None:
     s.add_parser("ver").add_argument("id")
     sub.add_parser("silencios").add_argument("--avisar", action="store_true",
                                              help="escribe los avisos para que el vigía los mande")
+    s = sub.add_parser("webhook", help="avisos firmados a otros programas").add_subparsers(dest="sub", required=True)
+    x = con_cita(s.add_parser("alta", help="el secreto whsec_ llega por la entrada estándar"))
+    x.add_argument("nombre")
+    x.add_argument("--url", required=True)
+    x.add_argument("--proyectos", required=True, help="separados por coma")
+    x.add_argument("--eventos", default=",".join(modulo_webhooks.EVENTOS))
+    con_cita(s.add_parser("rotar", help="el secreto nuevo llega por la entrada estándar")).add_argument("nombre")
+    x = con_cita(s.add_parser("cambiar"))
+    x.add_argument("nombre")
+    x.add_argument("--url")
+    x.add_argument("--proyectos")
+    x.add_argument("--eventos")
+    x.add_argument("--activo", choices=SI_NO)
+    s.add_parser("lista")
+    s.add_parser("prueba").add_argument("nombre")
+    s.add_parser("generar")
+    s.add_parser("entregar")
     x = sub.add_parser("avisos")
     g = x.add_mutually_exclusive_group(required=True)
     g.add_argument("--pendientes", action="store_true")
@@ -848,6 +901,8 @@ def main(argv=None) -> None:
         o = objeto_ver(motor, a.id)
         print(f"{o['id']}: {o['tipo']} de {o['proyecto']} en la cuenta {o['fuente']} · "
               f"desde {o['creado']:%Y-%m-%d %H:%M} UTC" if o else f"{a.id}: no está registrado")
+    elif a.orden == "webhook":
+        _webhook(motor, a)
     elif a.orden == "avisos":
         if a.pendientes:
             for x in modulo_avisos.pendientes(motor, a.max):

@@ -169,6 +169,35 @@ usuario_proyecto = Table(
     Column("proyecto", String(40), ForeignKey("proyecto.nombre"), primary_key=True),
 )
 
+# Avisos firmados (webhooks). También solo tablas nuevas. Los cursores de cada suscripción van en ajuste.
+
+webhook = Table(
+    "webhook", metadata,                                       # una suscripción: a dónde, qué eventos y de quién
+    Column("nombre", String(40), primary_key=True),
+    Column("url", Text, nullable=False),
+    Column("secreto", Text, nullable=False),                   # whsec_...; hace falta en claro para firmar
+    Column("secreto_anterior", Text),                          # durante 24 h después de rotar se firma con los dos
+    Column("anterior_hasta", DateTime),
+    Column("eventos", Text, nullable=False),                   # separados por coma
+    Column("proyectos", Text, nullable=False),                 # separados por coma; para uso.diario y llave.rotada
+    Column("activo", Boolean, nullable=False),
+    Column("creado", DateTime, nullable=False),
+)
+
+webhook_entrega = Table(
+    "webhook_entrega", metadata,
+    Column("id", ID, primary_key=True, autoincrement=True),
+    Column("evento", String(40), nullable=False, unique=True),  # el webhook-id; determinista, evita repetidos
+    Column("webhook", String(40), nullable=False, index=True),
+    Column("tipo", String(20), nullable=False),
+    Column("cuerpo", Text, nullable=False),                    # el sobre exacto que se firma
+    Column("creado", DateTime, nullable=False),
+    Column("intentos", Integer, nullable=False),
+    Column("proximo", DateTime, index=True),                   # None: ya no se manda (entregado o fallido)
+    Column("estado", String(10), nullable=False),              # pendiente | entregado | fallido
+    Column("ultimo", String(200)),                             # resultado del último intento, sin cuerpo
+)
+
 POOL, DESBORDE = 5, 5
 # Hilos para llamadas a la base, uno por cada conexión posible, en dos limitadores: las filas de uso que se escriben
 # ya enviada la respuesta no pueden quitarle turno a lo que una petición o el refresco están esperando.

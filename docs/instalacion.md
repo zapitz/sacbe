@@ -142,6 +142,8 @@ Cron (`crontab -e` del usuario que puede usar docker):
 
 Necesita bash 4 o más, `curl` y `python3` en el servidor.
 
+Si otro programa quiere enterarse del gasto por su cuenta, dale avisos firmados: [avisos-firmados.md](avisos-firmados.md).
+
 ## 10. Conciliación diaria
 
 En tu máquina, guarda una llave de administrador por organización en `~/.config/sacbe/anthropic_admin_<cuenta>.env`:

@@ -65,6 +65,7 @@ La última orden imprime la llave `pia_` del programa una sola vez. Los pasos co
 
 - [docs/instalacion.md](docs/instalacion.md): requisitos, `.env`, cuentas, primer usuario, Cloudflare Access, proxy y vigía.
 - [docs/conectar-programas.md](docs/conectar-programas.md): el contrato de integración, la regla de respaldo directo y ejemplos.
+- [docs/avisos-firmados.md](docs/avisos-firmados.md): avisos firmados (webhooks) a tus programas: gasto del día, crédito por perderse, cambio de cuenta y llaves rotadas.
 - [cliente/](cliente/): la librería `sacbe` para Python. Cambias `from anthropic import Anthropic` por `from sacbe import Anthropic` y listo.
 - [docs/panel.md](docs/panel.md): papeles y qué puede hacer cada uno.
 - [docs/seguridad.md](docs/seguridad.md): modelo de amenazas.

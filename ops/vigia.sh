@@ -6,7 +6,8 @@
 #   - los avisos que el gestor deja en su tabla aviso (cuenta agotada, cambio de cuenta en uso, dinero, topes,
 #     llaves). Se mandan en orden, hasta 10 por vuelta, y se marcan uno por uno; si el envío falla, se quedan
 #     pendientes para la siguiente vuelta;
-#   - una vez por hora, los programas con tráfico real que llevan 48 h sin pasar por el gestor (admin silencios).
+#   - una vez por hora, los programas con tráfico real que llevan 48 h sin pasar por el gestor (admin silencios);
+#   - en cada vuelta, los avisos firmados (webhooks) a otros programas: admin webhook generar y entregar.
 #
 # Cada aviso sale como POST JSON {"texto": "..."} a PIA_AVISOS_URL (un webhook tuyo: chat, correo, lo que sea).
 # Si existe PIA_AVISOS_TOKEN, va como «Authorization: Bearer <token>». Sin PIA_AVISOS_URL solo se escribe en el log
@@ -84,6 +85,10 @@ if [[ -n "$J_API" ]]; then
     E[fallas_base]=0
     if (( 10#$(date +%M) < 5 )) && ! $PRUEBA; then
       admin silencios --avisar >/dev/null || echo "$LOG no pude revisar los programas callados"
+    fi
+    if ! $PRUEBA; then   # avisos firmados a otros programas (webhook): primero se arman, luego se mandan
+      admin webhook generar >/dev/null || echo "$LOG no pude generar los webhooks"
+      admin webhook entregar | grep -v ' 0 entregados · 0 por reintentar · 0 fallidos' || true
     fi
     pendientes=$(admin avisos --pendientes --max 10)
     while IFS= read -r linea; do
